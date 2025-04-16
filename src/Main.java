@@ -7,7 +7,9 @@ public class Main {
             public void run() {
                 ClientRegistrationFrame frame = new ClientRegistrationFrame();
                 frame.setVisible(true);
+                System.out.println("Premier commit");
             }
         });
     }
+
 }
