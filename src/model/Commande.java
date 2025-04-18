@@ -1,27 +1,31 @@
 package model;
 
-import java.sql.Date;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Classe représentant une commande effectuée par un client.
  */
 public class Commande {
     private int id;
-    private int idClient;  // Clé étrangère vers Client
-    private Date dateCommande;
-    private double montantTotal;
+    private int idClient;                  // Clé étrangère vers Client
+    private LocalDateTime dateCommande;    // Date et heure de la commande
+    private double montantTotal;           // Montant total de la commande
+    private List<LigneCommande> lignes;    // Lignes de la commande
 
     public Commande() {
     }
 
-    public Commande(int id, int idClient, Date dateCommande, double montantTotal) {
-        this.id = id;
-        this.idClient = idClient;
-        this.dateCommande = dateCommande;
-        this.montantTotal = montantTotal;
+    public Commande(int id, int idClient, LocalDateTime dateCommande, double montantTotal, List<LigneCommande> lignes) {
+        this.id            = id;
+        this.idClient      = idClient;
+        this.dateCommande  = dateCommande;
+        this.montantTotal  = montantTotal;
+        this.lignes        = lignes;
     }
 
-    // Getters et Setters
+    // Getters / Setters
+
     public int getId() {
         return id;
     }
@@ -36,10 +40,10 @@ public class Commande {
         this.idClient = idClient;
     }
 
-    public Date getDateCommande() {
+    public LocalDateTime getDateCommande() {
         return dateCommande;
     }
-    public void setDateCommande(Date dateCommande) {
+    public void setDateCommande(LocalDateTime dateCommande) {
         this.dateCommande = dateCommande;
     }
 
@@ -50,6 +54,13 @@ public class Commande {
         this.montantTotal = montantTotal;
     }
 
+    public List<LigneCommande> getLignes() {
+        return lignes;
+    }
+    public void setLignes(List<LigneCommande> lignes) {
+        this.lignes = lignes;
+    }
+
     @Override
     public String toString() {
         return "Commande{" +
@@ -57,6 +68,7 @@ public class Commande {
                 ", idClient=" + idClient +
                 ", dateCommande=" + dateCommande +
                 ", montantTotal=" + montantTotal +
+                ", lignes=" + lignes +
                 '}';
     }
 }

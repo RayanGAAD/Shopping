@@ -1,43 +1,85 @@
 package DAO;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import model.Commande;
+import model.LigneCommande;
 
+import java.sql.*;
+import java.time.LocalDateTime;
+
+/**
+ * DAO pour persister les commandes et leurs lignes en base de données.
+ */
 public class CommandeDAO {
 
-    // Méthode pour insérer une nouvelle commande dans la BDD
-    public boolean addCommande(Commande commande) {
-        String sql = "INSERT INTO commande (idClient, dateCommande, montantTotal) VALUES (?, ?, ?)";
+    /**
+     * Crée une commande dans la table `commande` et retourne l'ID généré.
+     */
+    public int createCommande(Commande commande) {
+        String sql = "INSERT INTO commande (client_id, date_commande, montant_total) VALUES (?, ?, ?)";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setInt(1, commande.getIdClient());
+            stmt.setTimestamp(2, Timestamp.valueOf(commande.getDateCommande()));
+            stmt.setDouble(3, commande.getMontantTotal());
+
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                return -1;
+            }
+            try (ResultSet gk = stmt.getGeneratedKeys()) {
+                if (gk.next()) {
+                    return gk.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * Insère une ligne de commande dans `commande_article`.
+     */
+    public boolean createLigneCommande(LigneCommande ligne) {
+        String sql = "INSERT INTO commande_article (commande_id, article_id, quantite) VALUES (?, ?, ?)";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, commande.getIdClient());
-            stmt.setDate(2, commande.getDateCommande());
-            stmt.setDouble(3, commande.getMontantTotal());
-            int rowsInserted = stmt.executeUpdate();
-            return rowsInserted > 0;
+
+            stmt.setInt(1, ligne.getIdCommande());
+            stmt.setInt(2, ligne.getIdArticle());
+            stmt.setInt(3, ligne.getQuantite());
+
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
 
-    // Méthode pour récupérer une commande par son ID
+    /**
+     * Récupère une commande (sans ses lignes) par son ID.
+     */
     public Commande getCommandeById(int id) {
         Commande commande = null;
         String sql = "SELECT * FROM commande WHERE id = ?";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                commande = new Commande();
-                commande.setId(rs.getInt("id"));
-                commande.setIdClient(rs.getInt("idClient"));
-                commande.setDateCommande(rs.getDate("dateCommande"));
-                commande.setMontantTotal(rs.getDouble("montantTotal"));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    commande = new Commande();
+                    commande.setId(rs.getInt("id"));
+                    commande.setIdClient(rs.getInt("client_id"));
+
+                    Timestamp ts = rs.getTimestamp("date_commande");
+                    if (ts != null) {
+                        commande.setDateCommande(ts.toLocalDateTime());
+                    }
+
+                    commande.setMontantTotal(rs.getDouble("montant_total"));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -45,5 +87,5 @@ public class CommandeDAO {
         return commande;
     }
 
-    // Vous pouvez ajouter d'autres méthodes pour update, delete, ou récupérer toutes les commandes.
+    // TODO: Ajouter getCommandesByClient(int idClient) et getLignesCommande(int commandeId) si besoin
 }

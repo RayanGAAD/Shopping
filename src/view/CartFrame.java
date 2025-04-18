@@ -2,14 +2,19 @@ package view;
 
 import model.CartItem;
 import service.CartService;
-
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
 
+// Import de la fenêtre de confirmation
+import view.OrderConfirmationFrame;
+
+/**
+ * Fenêtre affichant le contenu du panier et permettant de passer à la confirmation de commande.
+ */
 public class CartFrame extends JFrame {
-    private CartService cartService;    // plus d'instanciation interne
+    private CartService cartService;
     private JTable table;
     private DefaultTableModel model;
     private JButton removeButton, checkoutButton;
@@ -75,15 +80,13 @@ public class CartFrame extends JFrame {
             }
         });
 
-        // Valider la commande
+        // Ouvrir la fenêtre de confirmation de commande
         checkoutButton.addActionListener(e -> {
-            boolean ok = cartService.checkout();
-            if (ok) {
-                JOptionPane.showMessageDialog(this, "Commande validée !");
-                reloadTable();
-            } else {
-                JOptionPane.showMessageDialog(this, "Le panier est vide.", "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
+            // Cacher la fenêtre du panier
+            this.setVisible(false);
+            // Ouvrir la confirmation en passant la référence
+            OrderConfirmationFrame confFrame = new OrderConfirmationFrame(cartService, this);
+            confFrame.setVisible(true);
         });
 
         // Chargement initial du panier
@@ -93,7 +96,7 @@ public class CartFrame extends JFrame {
     /**
      * Recharge le contenu du tableau depuis le panier.
      */
-    private void reloadTable() {
+    public void reloadTable() {
         model.setRowCount(0);
         List<CartItem> items = cartService.getCartItems();
         for (CartItem ci : items) {
