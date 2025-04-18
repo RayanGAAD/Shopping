@@ -2,6 +2,8 @@ package view;
 
 import model.Article;
 import service.ArticleService;
+import service.CartService;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -10,27 +12,29 @@ import java.util.List;
 
 public class ArticleCatalogFrame extends JFrame {
 
-    private ArticleService articleService = new ArticleService(); // Service pour interroger les articles
+    private ArticleService articleService = new ArticleService();
+    private CartService cartService       = new CartService();  // instance partagée
+
     private JTable articleTable;
     private DefaultTableModel tableModel;
-
-    // Composants de recherche
     private JTextField searchField;
     private JButton searchButton;
 
+    // On garde en mémoire la liste affichée pour retrouver l'objet Article à partir de la ligne
+    private List<Article> currentArticles;
+
     public ArticleCatalogFrame() {
         setTitle("Catalogue d'Articles");
-        setSize(800, 600); // Taille ajustée pour inclure la barre de recherche
+        setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Centre la fenêtre
+        setLocationRelativeTo(null);
         initUI();
     }
 
     private void initUI() {
-        // Utilisation d'un BorderLayout pour organiser la barre de recherche et le tableau
         setLayout(new BorderLayout());
 
-        // Création d'un panel pour la recherche en haut
+        // === Barre de recherche ===
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Recherche par nom :"));
         searchField = new JTextField(20);
@@ -39,61 +43,82 @@ public class ArticleCatalogFrame extends JFrame {
         searchPanel.add(searchButton);
         add(searchPanel, BorderLayout.NORTH);
 
-        // Définir les colonnes du tableau
-        String[] columnNames = {"ID", "Nom", "Description", "Prix Unitaire", "Prix Gros", "Quantité", "Marque"};
+        // === Tableau des articles ===
+        String[] columnNames = {"ID", "Nom", "Description", "Prix Unitaire", "Prix Gros", "Quantité en stock", "Marque"};
         tableModel = new DefaultTableModel(columnNames, 0);
         articleTable = new JTable(tableModel);
+        add(new JScrollPane(articleTable), BorderLayout.CENTER);
 
-        // Placer le tableau dans un JScrollPane
-        JScrollPane scrollPane = new JScrollPane(articleTable);
-        add(scrollPane, BorderLayout.CENTER);
+        // === Panel des boutons bas ===
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton addToCartBtn = new JButton("Ajouter au panier");
+        JButton viewCartBtn  = new JButton("Voir le panier");
+        bottomPanel.add(addToCartBtn);
+        bottomPanel.add(viewCartBtn);
+        add(bottomPanel, BorderLayout.SOUTH);
 
-        // Charger tous les articles au démarrage
-        loadAllArticles();
-
-        // Ajout d'un ActionListener pour déclencher la recherche lorsqu'on clique sur le bouton
+        // === Actions ===
         searchButton.addActionListener((ActionEvent e) -> searchArticles());
+        addToCartBtn.addActionListener((ActionEvent e) -> addSelectedToCart());
+        viewCartBtn.addActionListener((ActionEvent e) -> {
+            // On passe la même instance de cartService au CartFrame
+            CartFrame cartFrame = new CartFrame(cartService);
+            cartFrame.setVisible(true);
+        });
+
+        // Chargement initial
+        loadAllArticles();
     }
 
-    /**
-     * Charge l'ensemble des articles et les affiche dans la table.
-     */
     private void loadAllArticles() {
-        List<Article> articles = articleService.getAllArticles();
-        populateTable(articles);
+        currentArticles = articleService.getAllArticles();
+        populateTable(currentArticles);
     }
 
-    /**
-     * Met à jour le contenu du tableau avec la liste d'articles donnée.
-     * @param articles Liste d'articles à afficher.
-     */
     private void populateTable(List<Article> articles) {
-        tableModel.setRowCount(0); // Efface le tableau
-        for (Article article : articles) {
-            Object[] rowData = {
-                    article.getId(),
-                    article.getNom(),
-                    article.getDescription(),
-                    article.getPrixUnitaire(),
-                    article.getPrixGros(),
-                    article.getQuantiteEnStock(),
-                    article.getMarque()  // Assurez-vous que getMarque() renvoie une String
+        tableModel.setRowCount(0);
+        for (Article art : articles) {
+            Object[] row = {
+                    art.getId(),
+                    art.getNom(),
+                    art.getDescription(),
+                    art.getPrixUnitaire(),
+                    art.getPrixGros(),
+                    art.getQuantiteEnStock(),
+                    art.getMarque()
             };
-            tableModel.addRow(rowData);
+            tableModel.addRow(row);
         }
     }
 
-    /**
-     * Recherche les articles en fonction du nom saisi et met à jour le tableau.
-     */
     private void searchArticles() {
         String keyword = searchField.getText().trim();
         if (keyword.isEmpty()) {
             loadAllArticles();
         } else {
-            // On suppose que dans ArticleService existe une méthode searchArticlesByName(String)
-            List<Article> filteredArticles = articleService.searchArticlesByName(keyword);
-            populateTable(filteredArticles);
+            currentArticles = articleService.searchArticlesByName(keyword);
+            populateTable(currentArticles);
+        }
+    }
+
+    private void addSelectedToCart() {
+        int row = articleTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "Sélectionnez d'abord un article.", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Article selected = currentArticles.get(row);
+        String qtyStr = JOptionPane.showInputDialog(this, "Quantité pour \"" + selected.getNom() + "\" :", "1");
+        if (qtyStr == null) return;  // Annulé
+
+        try {
+            int qty = Integer.parseInt(qtyStr);
+            if (qty <= 0) throw new NumberFormatException();
+            cartService.addToCart(selected, qty);
+            JOptionPane.showMessageDialog(this, qty + " exemplaire(s) ajouté(s) au panier.");
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Quantité invalide.", "Erreur", JOptionPane.ERROR_MESSAGE);
         }
     }
 
