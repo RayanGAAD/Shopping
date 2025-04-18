@@ -3,13 +3,18 @@ package view;
 import model.Article;
 import service.ArticleService;
 import service.CartService;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.List;
 
+// Import des autres vues
+import view.CartFrame;
+
+/**
+ * Interface catalogue des articles avec ajout au panier et recherche.
+ */
 public class ArticleCatalogFrame extends JFrame {
 
     private ArticleService articleService = new ArticleService();
@@ -20,7 +25,7 @@ public class ArticleCatalogFrame extends JFrame {
     private JTextField searchField;
     private JButton searchButton;
 
-    // On garde en mémoire la liste affichée pour retrouver l'objet Article à partir de la ligne
+    // Liste courante d'articles affichée
     private List<Article> currentArticles;
 
     public ArticleCatalogFrame() {
@@ -28,13 +33,15 @@ public class ArticleCatalogFrame extends JFrame {
         setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        // Exemple : définir un clientId avant toute action (à adapter après login)
+        cartService.setClientId(1);
         initUI();
     }
 
     private void initUI() {
         setLayout(new BorderLayout());
 
-        // === Barre de recherche ===
+        // Barre de recherche
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Recherche par nom :"));
         searchField = new JTextField(20);
@@ -43,13 +50,13 @@ public class ArticleCatalogFrame extends JFrame {
         searchPanel.add(searchButton);
         add(searchPanel, BorderLayout.NORTH);
 
-        // === Tableau des articles ===
+        // Tableau des articles
         String[] columnNames = {"ID", "Nom", "Description", "Prix Unitaire", "Prix Gros", "Quantité en stock", "Marque"};
         tableModel = new DefaultTableModel(columnNames, 0);
         articleTable = new JTable(tableModel);
         add(new JScrollPane(articleTable), BorderLayout.CENTER);
 
-        // === Panel des boutons bas ===
+        // Boutons bas
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton addToCartBtn = new JButton("Ajouter au panier");
         JButton viewCartBtn  = new JButton("Voir le panier");
@@ -57,12 +64,12 @@ public class ArticleCatalogFrame extends JFrame {
         bottomPanel.add(viewCartBtn);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // === Actions ===
+        // Actions
         searchButton.addActionListener((ActionEvent e) -> searchArticles());
         addToCartBtn.addActionListener((ActionEvent e) -> addSelectedToCart());
         viewCartBtn.addActionListener((ActionEvent e) -> {
-            // On passe la même instance de cartService au CartFrame
-            CartFrame cartFrame = new CartFrame(cartService);
+            // On passe la même instance de cartService et la référence du catalogue
+            CartFrame cartFrame = new CartFrame(cartService, this);
             cartFrame.setVisible(true);
         });
 
@@ -70,7 +77,7 @@ public class ArticleCatalogFrame extends JFrame {
         loadAllArticles();
     }
 
-    private void loadAllArticles() {
+    public void loadAllArticles() {
         currentArticles = articleService.getAllArticles();
         populateTable(currentArticles);
     }
@@ -104,21 +111,44 @@ public class ArticleCatalogFrame extends JFrame {
     private void addSelectedToCart() {
         int row = articleTable.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Sélectionnez d'abord un article.", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Sélectionnez d'abord un article.",
+                    "Aucune sélection",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         Article selected = currentArticles.get(row);
-        String qtyStr = JOptionPane.showInputDialog(this, "Quantité pour \"" + selected.getNom() + "\" :", "1");
+        String qtyStr = JOptionPane.showInputDialog(
+                this,
+                "Quantité pour \"" + selected.getNom() + "\" :",
+                "1");
         if (qtyStr == null) return;  // Annulé
 
         try {
             int qty = Integer.parseInt(qtyStr);
             if (qty <= 0) throw new NumberFormatException();
-            cartService.addToCart(selected, qty);
-            JOptionPane.showMessageDialog(this, qty + " exemplaire(s) ajouté(s) au panier.");
+
+            boolean added = cartService.addToCart(selected, qty);
+            if (added) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        qty + " exemplaire(s) ajouté(s) au panier.");
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Stock insuffisant pour \"" + selected.getNom() + "\".",
+                        "Erreur",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Quantité invalide.", "Erreur", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Quantité invalide.",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 

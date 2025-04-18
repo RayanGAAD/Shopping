@@ -3,22 +3,21 @@ package view;
 import model.CartItem;
 import service.CartService;
 import view.CartFrame;
-
+import view.ArticleCatalogFrame;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
-import javax.swing.SwingUtilities;
-
 
 /**
  * Fenêtre de confirmation de commande : récapitule le panier et valide la commande,
- * puis rend la main à la fenêtre du panier (CartFrame).
+ * puis rend la main à la fenêtre du panier (CartFrame) et au catalogue (ArticleCatalogFrame).
  */
 public class OrderConfirmationFrame extends JFrame {
     private CartService cartService;
-    private CartFrame parentFrame;   // référence à la fenêtre parente du panier
+    private CartFrame parentFrame;            // Référence à la fenêtre du panier
+    private ArticleCatalogFrame catalogFrame; // Référence à la fenêtre du catalogue
     private JTable table;
     private DefaultTableModel model;
     private JLabel totalLabel;
@@ -27,10 +26,12 @@ public class OrderConfirmationFrame extends JFrame {
     /**
      * @param cartService Service de panier partagé
      * @param parentFrame Fenêtre CartFrame appelante
+     * @param catalogFrame Fenêtre ArticleCatalogFrame pour rafraîchir le catalogue
      */
-    public OrderConfirmationFrame(CartService cartService, CartFrame parentFrame) {
+    public OrderConfirmationFrame(CartService cartService, CartFrame parentFrame, ArticleCatalogFrame catalogFrame) {
         this.cartService = cartService;
         this.parentFrame = parentFrame;
+        this.catalogFrame = catalogFrame;
 
         setTitle("Confirmation de Commande");
         setSize(600, 400);
@@ -64,8 +65,9 @@ public class OrderConfirmationFrame extends JFrame {
             boolean ok = cartService.checkout();
             if (ok) {
                 JOptionPane.showMessageDialog(this, "Commande enregistrée avec succès !");
-                // Réafficher et recharger le panier
+                // Rafraîchir panier et catalogue
                 parentFrame.reloadTable();
+                catalogFrame.loadAllArticles();
                 parentFrame.setVisible(true);
                 dispose();
             } else {
@@ -97,12 +99,13 @@ public class OrderConfirmationFrame extends JFrame {
         totalLabel.setText(String.format("Total : %.2f €", total));
     }
 
-    // main de test si besoin (passer un CartFrame fictif ou null)
+    // main de test si besoin (passer un CartFrame/ArticleCatalogFrame fictif ou null)
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             CartService demoCart = new CartService();
-            CartFrame fakeParent = null; // ou nouvel instance minimale
-            OrderConfirmationFrame frame = new OrderConfirmationFrame(demoCart, fakeParent);
+            CartFrame fakeParent = null;
+            ArticleCatalogFrame fakeCatalog = null;
+            OrderConfirmationFrame frame = new OrderConfirmationFrame(demoCart, fakeParent, fakeCatalog);
             frame.setVisible(true);
         });
     }

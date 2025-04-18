@@ -2,29 +2,33 @@ package view;
 
 import model.CartItem;
 import service.CartService;
+
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
 
-// Import de la fenêtre de confirmation
+// Imports nécessaires
 import view.OrderConfirmationFrame;
+import view.ArticleCatalogFrame;
 
 /**
  * Fenêtre affichant le contenu du panier et permettant de passer à la confirmation de commande.
  */
 public class CartFrame extends JFrame {
     private CartService cartService;
+    private ArticleCatalogFrame catalogFrame;  // référence au catalogue pour rafraîchir
     private JTable table;
     private DefaultTableModel model;
     private JButton removeButton, checkoutButton;
 
     /**
      * Constructeur principal : on injecte le même CartService
-     * que celui utilisé dans ArticleCatalogFrame.
+     * et la référence à ArticleCatalogFrame.
      */
-    public CartFrame(CartService cartService) {
+    public CartFrame(CartService cartService, ArticleCatalogFrame catalogFrame) {
         this.cartService = cartService;
+        this.catalogFrame = catalogFrame;
 
         setTitle("Panier d'Achat");
         setSize(800, 600);
@@ -59,7 +63,7 @@ public class CartFrame extends JFrame {
         bottom.add(checkoutButton);
         add(bottom, BorderLayout.SOUTH);
 
-        // Événements de mise à jour de quantité
+        // Mise à jour de quantité
         model.addTableModelListener(e -> {
             if (e.getColumn() == 3 && e.getFirstRow() >= 0) {
                 int row = e.getFirstRow();
@@ -84,8 +88,8 @@ public class CartFrame extends JFrame {
         checkoutButton.addActionListener(e -> {
             // Cacher la fenêtre du panier
             this.setVisible(false);
-            // Ouvrir la confirmation en passant la référence
-            OrderConfirmationFrame confFrame = new OrderConfirmationFrame(cartService, this);
+            // Ouvrir la confirmation en passant références
+            OrderConfirmationFrame confFrame = new OrderConfirmationFrame(cartService, this, catalogFrame);
             confFrame.setVisible(true);
         });
 
@@ -117,7 +121,8 @@ public class CartFrame extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             CartService sharedCart = new CartService();
-            CartFrame frame = new CartFrame(sharedCart);
+            ArticleCatalogFrame fakeCatalog = null; // à remplacer par instance réelle
+            CartFrame frame = new CartFrame(sharedCart, fakeCatalog);
             frame.setVisible(true);
         });
     }

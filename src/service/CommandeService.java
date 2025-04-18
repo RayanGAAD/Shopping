@@ -1,6 +1,7 @@
 package service;
 
 import DAO.CommandeDAO;
+import DAO.ArticleDAO;
 import model.CartItem;
 import model.Commande;
 import model.LigneCommande;
@@ -8,14 +9,19 @@ import model.LigneCommande;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Service gérant le passage de commande : persistance en base et mise à jour des stocks.
+ */
 public class CommandeService {
     private CommandeDAO commandeDAO = new CommandeDAO();
+    private ArticleDAO articleDAO   = new ArticleDAO();
 
     /**
-     * Passe la commande : enregistre la commande + ses lignes, puis vide le panier si tout réussit.
-     * @param idClient   ID du client qui commande.
-     * @param cartItems  Liste des articles et quantités du panier.
-     * @return true si la commande a bien été enregistrée, false sinon.
+     * Passe la commande : enregistre la commande + ses lignes, met à jour le stock,
+     * puis retourne le succès ou l'échec.
+     * @param idClient  ID du client qui commande.
+     * @param cartItems Liste des articles et quantités du panier.
+     * @return true si la commande a bien été enregistrée et le stock mis à jour, false sinon.
      */
     public boolean placeOrder(int idClient, List<CartItem> cartItems) {
         // Calcul du total
@@ -35,7 +41,7 @@ public class CommandeService {
             return false;
         }
 
-        // 2) Créer chacune des lignes de commande
+        // 2) Créer chacune des lignes de commande et mettre à jour le stock
         for (CartItem ci : cartItems) {
             LigneCommande ligne = new LigneCommande();
             ligne.setIdCommande(idCmd);
@@ -43,9 +49,14 @@ public class CommandeService {
             ligne.setQuantite(ci.getQuantity());
             ligne.setPrixUnitaire(ci.getArticle().getPrixUnitaire());
 
-            boolean ok = commandeDAO.createLigneCommande(ligne);
-            if (!ok) {
+            boolean ligneOk = commandeDAO.createLigneCommande(ligne);
+            if (!ligneOk) {
                 return false;
+            }
+
+            boolean stockOk = articleDAO.updateStock(ci.getArticle().getId(), ci.getQuantity());
+            if (!stockOk) {
+                return false; // stock insuffisant ou erreur
             }
         }
 

@@ -3,14 +3,17 @@ package service;
 import model.Panier;
 import model.Article;
 import model.CartItem;
+import DAO.ArticleDAO;
 import java.util.List;
 
 /**
- * Service de gestion du panier d'achat, avec intégration de la persistance de commandes.
+ * Service de gestion du panier d'achat, avec intégration de la persistance de commandes
+ * et vérification de la disponibilité en stock.
  */
 public class CartService {
     private Panier panier = new Panier();
     private CommandeService commandeService = new CommandeService();
+    private ArticleDAO articleDAO = new ArticleDAO();
     private int clientId; // Identifiant du client courant
 
     /**
@@ -21,17 +24,29 @@ public class CartService {
     }
 
     /**
-     * Ajoute un article avec quantité dans le panier.
+     * Ajoute un article avec quantité dans le panier après vérification du stock.
+     * @return true si l'ajout a réussi, false si stock insuffisant.
      */
-    public void addToCart(Article art, int qty) {
+    public boolean addToCart(Article art, int qty) {
+        Article dbArt = articleDAO.getArticleById(art.getId());
+        if (dbArt.getQuantiteEnStock() < qty) {
+            return false;
+        }
         panier.addArticle(art, qty);
+        return true;
     }
 
     /**
-     * Met à jour la quantité d'un article dans le panier.
+     * Met à jour la quantité d'un article dans le panier après vérification du stock.
+     * @return true si la mise à jour a réussi, false si stock insuffisant.
      */
-    public void updateQuantity(Article art, int qty) {
+    public boolean updateQuantity(Article art, int qty) {
+        Article dbArt = articleDAO.getArticleById(art.getId());
+        if (dbArt.getQuantiteEnStock() < qty) {
+            return false;
+        }
         panier.updateQuantity(art, qty);
+        return true;
     }
 
     /**
@@ -57,7 +72,7 @@ public class CartService {
 
     /**
      * Valide la commande en base pour le client courant et vide le panier si succès.
-     * @return true si la commande a été enregistrée, false sinon.
+     * @return true si la commande a été enregistrée et le stock mis à jour, false sinon.
      */
     public boolean checkout() {
         List<CartItem> items = panier.getItems();
