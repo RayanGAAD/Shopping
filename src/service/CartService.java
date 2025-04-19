@@ -4,6 +4,7 @@ import model.Panier;
 import model.Article;
 import model.CartItem;
 import DAO.ArticleDAO;
+import service.CommandeService;
 import java.util.List;
 
 /**
@@ -24,7 +25,16 @@ public class CartService {
     }
 
     /**
+     * Retourne l'identifiant du client courant.
+     */
+    public int getClientId() {
+        return this.clientId;
+    }
+
+    /**
      * Ajoute un article avec quantité dans le panier après vérification du stock.
+     * @param art Article à ajouter.
+     * @param qty Quantité désirée.
      * @return true si l'ajout a réussi, false si stock insuffisant.
      */
     public boolean addToCart(Article art, int qty) {
@@ -38,6 +48,8 @@ public class CartService {
 
     /**
      * Met à jour la quantité d'un article dans le panier après vérification du stock.
+     * @param art Article à mettre à jour.
+     * @param qty Nouvelle quantité désirée.
      * @return true si la mise à jour a réussi, false si stock insuffisant.
      */
     public boolean updateQuantity(Article art, int qty) {
@@ -51,6 +63,7 @@ public class CartService {
 
     /**
      * Retire un article du panier.
+     * @param art Article à retirer.
      */
     public void removeFromCart(Article art) {
         panier.removeArticle(art);
@@ -58,6 +71,7 @@ public class CartService {
 
     /**
      * Retourne la liste des items du panier.
+     * @return Liste de CartItem.
      */
     public List<CartItem> getCartItems() {
         return panier.getItems();
@@ -65,6 +79,7 @@ public class CartService {
 
     /**
      * Calcule le montant total du panier.
+     * @return Total en euros.
      */
     public double getCartTotal() {
         return panier.getTotal();

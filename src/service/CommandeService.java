@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Service gérant le passage de commande : persistance en base et mise à jour des stocks.
+ * Service gérant le passage de commande : persistance en base,
+ * mise à jour des stocks et historique des commandes.
  */
 public class CommandeService {
     private CommandeDAO commandeDAO = new CommandeDAO();
@@ -61,5 +62,23 @@ public class CommandeService {
         }
 
         return true;
+    }
+
+    /**
+     * Récupère l'historique des commandes d'un client.
+     * @param clientId ID du client.
+     * @return Liste des commandes passées par ce client, triées par date décroissante.
+     */
+    public List<Commande> getOrderHistory(int clientId) {
+        return commandeDAO.getCommandesByClientId(clientId);
+    }
+
+    /**
+     * Récupère le détail des lignes pour une commande donnée.
+     * @param commandeId ID de la commande.
+     * @return Liste des lignes de cette commande.
+     */
+    public List<LigneCommande> getOrderDetails(int commandeId) {
+        return commandeDAO.getLignesByCommandeId(commandeId);
     }
 }

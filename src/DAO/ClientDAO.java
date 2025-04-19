@@ -8,9 +8,10 @@ import model.Client;
 
 public class ClientDAO {
 
-    // Méthode pour insérer un nouveau client dans la BDD
+    /**
+     * Insère un nouveau client dans la BDD.
+     */
     public boolean addClient(Client client) {
-        // On insère toutes les colonnes attendues : nom, email, mot_de_passe et type
         String sql = "INSERT INTO client (nom, email, mot_de_passe, type) VALUES (?, ?, ?, ?)";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -18,57 +19,83 @@ public class ClientDAO {
             stmt.setString(2, client.getEmail());
             stmt.setString(3, client.getMot_De_Passe());
             stmt.setString(4, client.getType());
-            int rowsInserted = stmt.executeUpdate();
-            return rowsInserted > 0;
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
-    // Méthode pour récupérer un client par son ID
+    /**
+     * Récupère un client par son ID.
+     */
     public Client getClientById(int id) {
-        Client client = null;
         String sql = "SELECT * FROM client WHERE id = ?";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                client = new Client();
-                client.setId(rs.getInt("id"));
-                client.setNom(rs.getString("nom"));
-                client.setEmail(rs.getString("email"));
-                client.setMot_De_Passe(rs.getString("mot_de_passe"));  // Attention au nom de la colonne
-                client.setType(rs.getString("type"));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Client client = mapResultSetToClient(rs);
+                    return client;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return client;
+        return null;
     }
 
-    // Nouvelle méthode pour vérifier l'existence d'un client par email
+    /**
+     * Récupère un client par son email.
+     */
     public Client getClientByEmail(String email) {
-        Client client = null;
         String sql = "SELECT * FROM client WHERE email = ?";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                client = new Client();
-                client.setId(rs.getInt("id"));
-                client.setNom(rs.getString("nom"));
-                client.setEmail(rs.getString("email"));
-                client.setMot_De_Passe(rs.getString("mot_de_passe"));  // Récupère le mot de passe
-                client.setType(rs.getString("type"));
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Client client = mapResultSetToClient(rs);
+                    return client;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return client;
+        return null;
     }
 
-    // Vous pouvez ajouter ici d'autres méthodes (update, delete, etc.) selon vos besoins.
+    /**
+     * Vérifie l'email et mot de passe et retourne le Client si valides, sinon null.
+     */
+    public Client getClientByEmailAndPassword(String email, String motDePasse) {
+        String sql = "SELECT * FROM client WHERE email = ? AND mot_de_passe = ?";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            stmt.setString(2, motDePasse);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToClient(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Convertit une ligne de ResultSet en objet Client.
+     */
+    private Client mapResultSetToClient(ResultSet rs) throws SQLException {
+        Client client = new Client();
+        client.setId(rs.getInt("id"));
+        client.setNom(rs.getString("nom"));
+        client.setEmail(rs.getString("email"));
+        client.setMot_De_Passe(rs.getString("mot_de_passe"));
+        client.setType(rs.getString("type"));
+        return client;
+    }
 }

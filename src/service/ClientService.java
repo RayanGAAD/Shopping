@@ -3,18 +3,22 @@ package service;
 import DAO.ClientDAO;
 import model.Client;
 
+/**
+ * Service applicatif pour la gestion des clients :
+ * enregistrement, authentification et session.
+ */
 public class ClientService {
 
-    // Instance du DAO utilisé pour accéder aux données du client
     private ClientDAO clientDAO = new ClientDAO();
+    private Client currentClient;  // client authentifié
 
     /**
-     * Enregistre un nouveau client après avoir validé les données.
+     * Enregistre un nouveau client après validation des données.
      * @param client L'objet client à enregistrer.
      * @return true si l'enregistrement a réussi, false sinon.
      */
     public boolean registerClient(Client client) {
-        // Vérification que tous les champs obligatoires sont renseignés
+        // Vérification des champs obligatoires
         if (client.getNom() == null || client.getNom().isEmpty() ||
                 client.getEmail() == null || client.getEmail().isEmpty() ||
                 client.getMot_De_Passe() == null || client.getMot_De_Passe().isEmpty() ||
@@ -23,24 +27,63 @@ public class ClientService {
             return false;
         }
 
-        // Vérifier l'unicité de l'email avant l'insertion
+        // Vérification de l'unicité de l'email
         if (clientDAO.getClientByEmail(client.getEmail()) != null) {
             System.out.println("Erreur : Cet email est déjà utilisé !");
             return false;
         }
 
-        // Appel à la méthode du DAO pour insérer le client dans la BDD
         return clientDAO.addClient(client);
     }
 
     /**
+     * Authentifie un client par email et mot de passe.
+     * Stocke le client courant si succès.
+     * @param email      Email du client.
+     * @param motDePasse Mot de passe du client.
+     * @return L'ID du client si authentification réussie, sinon null.
+     */
+    public Integer login(String email, String motDePasse) {
+        // NB : vous devez avoir implémenté getClientByEmailAndPassword dans ClientDAO
+        Client c = clientDAO.getClientByEmailAndPassword(email, motDePasse);
+        if (c != null) {
+            this.currentClient = c;
+            return c.getId();
+        }
+        return null;
+    }
+
+    /**
+     * Se déconnecte (efface la session).
+     */
+    public void logout() {
+        this.currentClient = null;
+    }
+
+    /**
+     * Récupère le client courant (après connexion).
+     * @return Le Client authentifié, ou null si pas connecté.
+     */
+    public Client getCurrentClient() {
+        return currentClient;
+    }
+
+    /**
      * Récupère un client via son ID.
-     * @param id L'identifiant du client.
-     * @return Le client récupéré ou null s'il n'existe pas.
+     * @param id Identifiant du client.
+     * @return Le client ou null s'il n'existe pas.
      */
     public Client findClientById(int id) {
         return clientDAO.getClientById(id);
     }
 
-    // Vous pouvez ajouter d'autres méthodes pour mettre à jour ou supprimer un client si nécessaire.
+    /**
+     * Récupère un client via son email seul.
+     * Utile pour divers contrôles.
+     * @param email Email à rechercher.
+     * @return Le client ou null s'il n'existe pas.
+     */
+    public Client getClientByEmail(String email) {
+        return clientDAO.getClientByEmail(email);
+    }
 }

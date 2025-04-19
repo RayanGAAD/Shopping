@@ -3,6 +3,8 @@ package view;
 import model.Article;
 import service.ArticleService;
 import service.CartService;
+import service.CommandeService;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -11,30 +13,37 @@ import java.util.List;
 
 // Import des autres vues
 import view.CartFrame;
+import view.OrderHistoryFrame;
 
 /**
- * Interface catalogue des articles avec ajout au panier et recherche.
+ * Interface catalogue des articles avec ajout au panier, recherche et historique.
  */
 public class ArticleCatalogFrame extends JFrame {
 
-    private ArticleService articleService = new ArticleService();
-    private CartService cartService       = new CartService();  // instance partagée
+    private final ArticleService   articleService;
+    private final CartService      cartService;
+    private final CommandeService  commandeService;
 
-    private JTable articleTable;
+    private JTable            articleTable;
     private DefaultTableModel tableModel;
-    private JTextField searchField;
-    private JButton searchButton;
+    private JTextField        searchField;
+    private JButton           searchButton;
 
     // Liste courante d'articles affichée
     private List<Article> currentArticles;
 
-    public ArticleCatalogFrame() {
+    /**
+     * @param cartService Le CartService déjà initialisé (avec clientId).
+     */
+    public ArticleCatalogFrame(CartService cartService) {
+        this.cartService      = cartService;
+        this.articleService   = new ArticleService();
+        this.commandeService  = new CommandeService();
+
         setTitle("Catalogue d'Articles");
         setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        // Exemple : définir un clientId avant toute action (à adapter après login)
-        cartService.setClientId(1);
         initUI();
     }
 
@@ -44,15 +53,19 @@ public class ArticleCatalogFrame extends JFrame {
         // Barre de recherche
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Recherche par nom :"));
-        searchField = new JTextField(20);
+        searchField  = new JTextField(20);
         searchPanel.add(searchField);
         searchButton = new JButton("Rechercher");
         searchPanel.add(searchButton);
         add(searchPanel, BorderLayout.NORTH);
 
         // Tableau des articles
-        String[] columnNames = {"ID", "Nom", "Description", "Prix Unitaire", "Prix Gros", "Quantité en stock", "Marque"};
-        tableModel = new DefaultTableModel(columnNames, 0);
+        String[] columnNames = {
+                "ID", "Nom", "Description",
+                "Prix Unitaire", "Prix Gros",
+                "Quantité en stock", "Marque"
+        };
+        tableModel   = new DefaultTableModel(columnNames, 0);
         articleTable = new JTable(tableModel);
         add(new JScrollPane(articleTable), BorderLayout.CENTER);
 
@@ -60,17 +73,23 @@ public class ArticleCatalogFrame extends JFrame {
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton addToCartBtn = new JButton("Ajouter au panier");
         JButton viewCartBtn  = new JButton("Voir le panier");
+        JButton historyBtn   = new JButton("Historique");
         bottomPanel.add(addToCartBtn);
         bottomPanel.add(viewCartBtn);
+        bottomPanel.add(historyBtn);
         add(bottomPanel, BorderLayout.SOUTH);
 
         // Actions
         searchButton.addActionListener((ActionEvent e) -> searchArticles());
-        addToCartBtn.addActionListener((ActionEvent e) -> addSelectedToCart());
-        viewCartBtn.addActionListener((ActionEvent e) -> {
-            // On passe la même instance de cartService et la référence du catalogue
+        addToCartBtn .addActionListener((ActionEvent e) -> addSelectedToCart());
+        viewCartBtn  .addActionListener((ActionEvent e) -> {
             CartFrame cartFrame = new CartFrame(cartService, this);
             cartFrame.setVisible(true);
+        });
+        historyBtn   .addActionListener((ActionEvent e) -> {
+            int clientId = cartService.getClientId();
+            OrderHistoryFrame histo = new OrderHistoryFrame(commandeService, clientId);
+            histo.setVisible(true);
         });
 
         // Chargement initial
@@ -115,7 +134,8 @@ public class ArticleCatalogFrame extends JFrame {
                     this,
                     "Sélectionnez d'abord un article.",
                     "Aucune sélection",
-                    JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.WARNING_MESSAGE
+            );
             return;
         }
 
@@ -123,7 +143,8 @@ public class ArticleCatalogFrame extends JFrame {
         String qtyStr = JOptionPane.showInputDialog(
                 this,
                 "Quantité pour \"" + selected.getNom() + "\" :",
-                "1");
+                "1"
+        );
         if (qtyStr == null) return;  // Annulé
 
         try {
@@ -134,13 +155,15 @@ public class ArticleCatalogFrame extends JFrame {
             if (added) {
                 JOptionPane.showMessageDialog(
                         this,
-                        qty + " exemplaire(s) ajouté(s) au panier.");
+                        qty + " exemplaire(s) ajouté(s) au panier."
+                );
             } else {
                 JOptionPane.showMessageDialog(
                         this,
                         "Stock insuffisant pour \"" + selected.getNom() + "\".",
                         "Erreur",
-                        JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
 
         } catch (NumberFormatException ex) {
@@ -148,14 +171,8 @@ public class ArticleCatalogFrame extends JFrame {
                     this,
                     "Quantité invalide.",
                     "Erreur",
-                    JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ArticleCatalogFrame frame = new ArticleCatalogFrame();
-            frame.setVisible(true);
-        });
     }
 }

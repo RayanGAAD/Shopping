@@ -5,6 +5,8 @@ import model.LigneCommande;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * DAO pour persister les commandes et leurs lignes en base de données.
@@ -69,16 +71,7 @@ public class CommandeDAO {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    commande = new Commande();
-                    commande.setId(rs.getInt("id"));
-                    commande.setIdClient(rs.getInt("client_id"));
-
-                    Timestamp ts = rs.getTimestamp("date_commande");
-                    if (ts != null) {
-                        commande.setDateCommande(ts.toLocalDateTime());
-                    }
-
-                    commande.setMontantTotal(rs.getDouble("montant_total"));
+                    commande = mapResultSetToCommande(rs);
                 }
             }
         } catch (SQLException e) {
@@ -87,5 +80,75 @@ public class CommandeDAO {
         return commande;
     }
 
-    // TODO: Ajouter getCommandesByClient(int idClient) et getLignesCommande(int commandeId) si besoin
+    /**
+     * Récupère toutes les commandes passées par un client.
+     * @param idClient L'identifiant du client.
+     * @return Liste d'objets Commande.
+     */
+    public List<Commande> getCommandesByClientId(int idClient) {
+        List<Commande> commandes = new ArrayList<>();
+        String sql = "SELECT * FROM commande WHERE client_id = ? ORDER BY date_commande DESC";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idClient);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    commandes.add(mapResultSetToCommande(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return commandes;
+    }
+
+    /**
+     * Récupère toutes les lignes associées à une commande donnée,
+     * en allant chercher le prix unitaire (champ `prixUnitaire`) depuis la table `article`.
+     * @param commandeId L'identifiant de la commande.
+     * @return Liste d'objets LigneCommande, avec prixUnitaire correctement rempli.
+     */
+    public List<LigneCommande> getLignesByCommandeId(int commandeId) {
+        List<LigneCommande> lignes = new ArrayList<>();
+        String sql =
+                "SELECT la.commande_id, la.article_id, la.quantite, a.prixUnitaire " +
+                        "FROM commande_article la " +
+                        "JOIN article a ON la.article_id = a.id " +
+                        "WHERE la.commande_id = ?";
+
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, commandeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    LigneCommande ligne = new LigneCommande();
+                    ligne.setIdCommande(   rs.getInt("commande_id") );
+                    ligne.setIdArticle(    rs.getInt("article_id") );
+                    ligne.setQuantite(     rs.getInt("quantite") );
+                    ligne.setPrixUnitaire( rs.getDouble("prixUnitaire") );
+                    lignes.add(ligne);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return lignes;
+    }
+
+    /**
+     * Extrait un objet Commande à partir d'un ResultSet positionné sur la ligne courante.
+     */
+    private Commande mapResultSetToCommande(ResultSet rs) throws SQLException {
+        Commande commande = new Commande();
+        commande.setId(rs.getInt("id"));
+        commande.setIdClient(rs.getInt("client_id"));
+        Timestamp ts = rs.getTimestamp("date_commande");
+        if (ts != null) {
+            commande.setDateCommande(ts.toLocalDateTime());
+        }
+        commande.setMontantTotal(rs.getDouble("montant_total"));
+        return commande;
+    }
 }

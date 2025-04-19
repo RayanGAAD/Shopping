@@ -24,4 +24,13 @@ public class ArticleService {
     public List<Article> searchArticlesByName(String keyword) {
         return articleDAO.searchArticlesByName(keyword);
     }
+
+    /**
+     * Récupère un article par son ID.
+     * @param id L'identifiant de l'article.
+     * @return L'article correspondant, ou null s'il n'existe pas.
+     */
+    public Article getArticleById(int id) {
+        return articleDAO.getArticleById(id);
+    }
 }
