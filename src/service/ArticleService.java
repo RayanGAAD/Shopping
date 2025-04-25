@@ -2,8 +2,13 @@ package service;
 
 import DAO.ArticleDAO;
 import model.Article;
+
 import java.util.List;
 
+/**
+ * Service applicatif pour la gestion des articles :
+ * lecture, recherche, création, mise à jour et suppression.
+ */
 public class ArticleService {
 
     private ArticleDAO articleDAO = new ArticleDAO();
@@ -32,5 +37,32 @@ public class ArticleService {
      */
     public Article getArticleById(int id) {
         return articleDAO.getArticleById(id);
+    }
+
+    /**
+     * Crée un nouvel article en base.
+     * @param article L'article à ajouter.
+     * @return true si l'insertion a réussi, false sinon.
+     */
+    public boolean addArticle(Article article) {
+        return articleDAO.addArticle(article);
+    }
+
+    /**
+     * Met à jour un article existant en base.
+     * @param article L'article modifié.
+     * @return true si la mise à jour a réussi, false sinon.
+     */
+    public boolean updateArticle(Article article) {
+        return articleDAO.updateArticle(article);
+    }
+
+    /**
+     * Supprime un article de la base.
+     * @param id L'ID de l'article à supprimer.
+     * @return true si la suppression a réussi, false sinon.
+     */
+    public boolean deleteArticle(int id) {
+        return articleDAO.deleteArticle(id);
     }
 }

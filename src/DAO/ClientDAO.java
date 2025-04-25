@@ -1,11 +1,14 @@
 package DAO;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import model.Client;
 
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * DAO pour gérer les clients en base : CRUD et authentification.
+ */
 public class ClientDAO {
 
     /**
@@ -36,8 +39,7 @@ public class ClientDAO {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    Client client = mapResultSetToClient(rs);
-                    return client;
+                    return mapResultSetToClient(rs);
                 }
             }
         } catch (SQLException e) {
@@ -56,8 +58,7 @@ public class ClientDAO {
             stmt.setString(1, email);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    Client client = mapResultSetToClient(rs);
-                    return client;
+                    return mapResultSetToClient(rs);
                 }
             }
         } catch (SQLException e) {
@@ -84,6 +85,40 @@ public class ClientDAO {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Récupère la liste de tous les clients.
+     */
+    public List<Client> getAllClients() {
+        List<Client> clients = new ArrayList<>();
+        String sql = "SELECT * FROM client ORDER BY id";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                clients.add(mapResultSetToClient(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return clients;
+    }
+
+    /**
+     * Supprime un client par son ID.
+     * @return true si la suppression a réussi, false sinon.
+     */
+    public boolean deleteClient(int id) {
+        String sql = "DELETE FROM client WHERE id = ?";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**

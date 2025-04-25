@@ -12,7 +12,7 @@ import java.awt.event.ActionListener;
 public class ClientRegistrationFrame extends JFrame {
 
     private ClientService clientService = new ClientService();
-    private CartService cartService     = new CartService();
+    private CartService   cartService   = new CartService();
 
     private JTextField nameField;
     private JTextField emailField;
@@ -85,10 +85,9 @@ public class ClientRegistrationFrame extends JFrame {
             return;
         }
 
-        // 2) On récupère l'ID du client juste créé
+        // 2) On récupère l'objet Client fraîchement créé
         Client saved = clientService.getClientByEmail(email);
         if (saved == null) {
-            // ne devrait pas arriver si registerClient a renvoyé true
             JOptionPane.showMessageDialog(
                     this,
                     "Inscription réussie, mais impossible de récupérer votre compte.",
@@ -96,19 +95,24 @@ public class ClientRegistrationFrame extends JFrame {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
-        cartService.setClientId(saved.getId());
 
-        // 3) On ouvre le catalogue en passant le CartService
-        JOptionPane.showMessageDialog(this, "Client inscrit avec succès !");
-        ArticleCatalogFrame catalogFrame = new ArticleCatalogFrame(cartService);
-        catalogFrame.setVisible(true);
+        // 3) Redirection selon le type
+        if ("admin".equalsIgnoreCase(saved.getType())) {
+            // Pour un admin, on ouvre l'interface d'administration
+            AdminFrame adminFrame = new AdminFrame(saved);
+            adminFrame.setVisible(true);
+        } else {
+            // Pour un client classique, on initialise le panier et on ouvre le catalogue
+            cartService.setClientId(saved.getId());
+            JOptionPane.showMessageDialog(this, "Client inscrit avec succès !");
+            ArticleCatalogFrame catalogFrame = new ArticleCatalogFrame(cartService);
+            catalogFrame.setVisible(true);
+        }
 
         dispose();  // ferme la fenêtre d'inscription
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new ClientRegistrationFrame().setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new ClientRegistrationFrame().setVisible(true));
     }
 }

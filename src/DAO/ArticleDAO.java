@@ -14,16 +14,16 @@ public class ArticleDAO {
      * Insère un nouvel article dans la base de données.
      */
     public boolean addArticle(Article article) {
-        String sql = "INSERT INTO article (nom, description, prixUnitaire, prixGros, quantiteEnStock, marque) " +
+        String sql = "INSERT INTO article (nom, description, marque, prixUnitaire, prixGros, quantiteEnStock) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, article.getNom());
             stmt.setString(2, article.getDescription());
-            stmt.setDouble(3, article.getPrixUnitaire());
-            stmt.setDouble(4, article.getPrixGros());
-            stmt.setInt(5, article.getQuantiteEnStock());
-            stmt.setString(6, article.getMarque());
+            stmt.setString(3, article.getMarque());
+            stmt.setDouble(4, article.getPrixUnitaire());
+            stmt.setDouble(5, article.getPrixGros());
+            stmt.setInt(6, article.getQuantiteEnStock());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -41,15 +41,7 @@ public class ArticleDAO {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    Article article = new Article();
-                    article.setId(rs.getInt("id"));
-                    article.setNom(rs.getString("nom"));
-                    article.setDescription(rs.getString("description"));
-                    article.setPrixUnitaire(rs.getDouble("prixUnitaire"));
-                    article.setPrixGros(rs.getDouble("prixGros"));
-                    article.setQuantiteEnStock(rs.getInt("quantiteEnStock"));
-                    article.setMarque(rs.getString("marque"));
-                    return article;
+                    return mapResultSetToArticle(rs);
                 }
             }
         } catch (SQLException e) {
@@ -68,15 +60,7 @@ public class ArticleDAO {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                Article article = new Article();
-                article.setId(rs.getInt("id"));
-                article.setNom(rs.getString("nom"));
-                article.setDescription(rs.getString("description"));
-                article.setPrixUnitaire(rs.getDouble("prixUnitaire"));
-                article.setPrixGros(rs.getDouble("prixGros"));
-                article.setQuantiteEnStock(rs.getInt("quantiteEnStock"));
-                article.setMarque(rs.getString("marque"));
-                articles.add(article);
+                articles.add(mapResultSetToArticle(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -85,7 +69,7 @@ public class ArticleDAO {
     }
 
     /**
-     * Recherche les articles par mot‑clé sur le nom.
+     * Recherche les articles par mot-clé sur le nom.
      */
     public List<Article> searchArticlesByName(String keyword) {
         List<Article> articles = new ArrayList<>();
@@ -95,21 +79,52 @@ public class ArticleDAO {
             stmt.setString(1, "%" + keyword + "%");
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    Article article = new Article();
-                    article.setId(rs.getInt("id"));
-                    article.setNom(rs.getString("nom"));
-                    article.setDescription(rs.getString("description"));
-                    article.setPrixUnitaire(rs.getDouble("prixUnitaire"));
-                    article.setPrixGros(rs.getDouble("prixGros"));
-                    article.setQuantiteEnStock(rs.getInt("quantiteEnStock"));
-                    article.setMarque(rs.getString("marque"));
-                    articles.add(article);
+                    articles.add(mapResultSetToArticle(rs));
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return articles;
+    }
+
+    /**
+     * Met à jour un article existant.
+     */
+    public boolean updateArticle(Article article) {
+        String sql = "UPDATE article SET " +
+                "nom = ?, description = ?, marque = ?, " +
+                "prixUnitaire = ?, prixGros = ?, quantiteEnStock = ? " +
+                "WHERE id = ?";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, article.getNom());
+            stmt.setString(2, article.getDescription());
+            stmt.setString(3, article.getMarque());
+            stmt.setDouble(4, article.getPrixUnitaire());
+            stmt.setDouble(5, article.getPrixGros());
+            stmt.setInt(6, article.getQuantiteEnStock());
+            stmt.setInt(7, article.getId());
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Supprime un article par son ID.
+     */
+    public boolean deleteArticle(int id) {
+        String sql = "DELETE FROM article WHERE id = ?";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**
@@ -130,5 +145,20 @@ public class ArticleDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * Transforme la ligne courante d'un ResultSet en un Article.
+     */
+    private Article mapResultSetToArticle(ResultSet rs) throws SQLException {
+        Article a = new Article();
+        a.setId(rs.getInt("id"));
+        a.setNom(rs.getString("nom"));
+        a.setDescription(rs.getString("description"));
+        a.setMarque(rs.getString("marque"));
+        a.setPrixUnitaire(rs.getDouble("prixUnitaire"));
+        a.setPrixGros(rs.getDouble("prixGros"));
+        a.setQuantiteEnStock(rs.getInt("quantiteEnStock"));
+        return a;
     }
 }

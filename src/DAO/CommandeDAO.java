@@ -82,16 +82,16 @@ public class CommandeDAO {
 
     /**
      * Récupère toutes les commandes passées par un client.
-     * @param idClient L'identifiant du client.
+     * @param clientId L'identifiant du client.
      * @return Liste d'objets Commande.
      */
-    public List<Commande> getCommandesByClientId(int idClient) {
+    public List<Commande> getCommandesByClientId(int clientId) {
         List<Commande> commandes = new ArrayList<>();
         String sql = "SELECT * FROM commande WHERE client_id = ? ORDER BY date_commande DESC";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, idClient);
+            stmt.setInt(1, clientId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     commandes.add(mapResultSetToCommande(rs));
@@ -104,8 +104,29 @@ public class CommandeDAO {
     }
 
     /**
+     * Récupère toutes les commandes (tous clients), triées par date décroissante.
+     * Utile pour l'administration.
+     * @return Liste d'objets Commande.
+     */
+    public List<Commande> getAllCommandes() {
+        List<Commande> commandes = new ArrayList<>();
+        String sql = "SELECT * FROM commande ORDER BY date_commande DESC";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                commandes.add(mapResultSetToCommande(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return commandes;
+    }
+
+    /**
      * Récupère toutes les lignes associées à une commande donnée,
-     * en allant chercher le prix unitaire (champ `prixUnitaire`) depuis la table `article`.
+     * en allant chercher le prix unitaire depuis la table `article`.
      * @param commandeId L'identifiant de la commande.
      * @return Liste d'objets LigneCommande, avec prixUnitaire correctement rempli.
      */

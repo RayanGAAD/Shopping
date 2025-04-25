@@ -1,5 +1,6 @@
 package view;
 
+import model.Client;
 import service.ClientService;
 import service.CartService;
 
@@ -8,15 +9,14 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-/**
- * Fenêtre de connexion pour authentifier le client.
- */
 public class LoginFrame extends JFrame {
     private JTextField emailField;
     private JPasswordField passwordField;
     private JButton loginButton;
-    private ClientService clientService = new ClientService();
-    private CartService cartService = new CartService();
+    private JButton registerLink;
+
+    private final ClientService clientService = new ClientService();
+    private final CartService   cartService   = new CartService();
 
     public LoginFrame() {
         setTitle("Connexion Client");
@@ -43,39 +43,43 @@ public class LoginFrame extends JFrame {
         panel.add(loginButton);
 
         panel.add(new JLabel()); // vide
-        JButton registerLink = new JButton("S'inscrire");
+        registerLink = new JButton("S'inscrire");
         panel.add(registerLink);
 
         add(panel);
 
-        loginButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                authenticate();
-            }
-        });
+        // Action du bouton Se connecter
+        loginButton.addActionListener(e -> authenticate());
 
-        registerLink.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                new ClientRegistrationFrame().setVisible(true);
-                dispose();
-            }
+        // Lien vers l'inscription
+        registerLink.addActionListener(e -> {
+            new ClientRegistrationFrame().setVisible(true);
+            dispose();
         });
     }
 
     private void authenticate() {
         String email = emailField.getText().trim();
-        String pwd = new String(passwordField.getPassword());
+        String pwd   = String.valueOf(passwordField.getPassword());
+
         Integer clientId = clientService.login(email, pwd);
         if (clientId != null) {
-            // On fixe l'ID du client dans le CartService
-            cartService.setClientId(clientId);
+            Client current = clientService.getCurrentClient();
 
-            // On passe désormais cartService au constructeur du catalogue
-            ArticleCatalogFrame catalogFrame = new ArticleCatalogFrame(cartService);
-            catalogFrame.setVisible(true);
-            dispose();
+            if ("admin".equalsIgnoreCase(current.getType())) {
+                // Si admin, affiche l'interface d'administration
+                SwingUtilities.invokeLater(() -> {
+                    new AdminFrame(current).setVisible(true);
+                });
+            } else {
+                // Sinon, prépare le panier et affiche le catalogue client
+                cartService.setClientId(clientId);
+                SwingUtilities.invokeLater(() -> {
+                    new ArticleCatalogFrame(cartService).setVisible(true);
+                });
+            }
+
+            dispose();  // ferme la fenêtre de login
         } else {
             JOptionPane.showMessageDialog(
                     this,
