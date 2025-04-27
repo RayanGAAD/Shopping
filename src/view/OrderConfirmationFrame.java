@@ -38,15 +38,17 @@ public class OrderConfirmationFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        // tableau
+        // Tableau récapitulatif
         String[] cols = {"Nom", "Prix Unitaire (€)", "Quantité", "Total (€)"};
-        model        = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int row, int col) { return false; }
+        model = new DefaultTableModel(cols, 0) {
+            @Override public boolean isCellEditable(int row, int col) {
+                return false;
+            }
         };
         table = new JTable(model);
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-        // bas
+        // Panel du bas avec total et bouton de confirmation
         JPanel bottom = new JPanel(new BorderLayout(10,10));
         totalLabel    = new JLabel("Total : 0.00 €");
         confirmButton = new JButton("Confirmer la commande");
@@ -60,9 +62,9 @@ public class OrderConfirmationFrame extends JFrame {
 
     private void attachListeners() {
         confirmButton.addActionListener(e -> {
-            // 1) simulate payment
+            // 1) Simuler le paiement
             PaymentFrame payment = new PaymentFrame(this, () -> {
-                // 2) after 2s payment, do checkout
+                // 2) Après 2s de paiement, enregistrer la commande
                 boolean ok = cartService.checkout();
                 if (ok) {
                     JOptionPane.showMessageDialog(
@@ -79,7 +81,7 @@ public class OrderConfirmationFrame extends JFrame {
                             JOptionPane.ERROR_MESSAGE
                     );
                 }
-                // 3) refresh views
+                // 3) Rafraîchir le panier et le catalogue
                 parentFrame.reloadTable();
                 catalogFrame.loadAllArticles();  // doit être public
                 parentFrame.setVisible(true);
@@ -89,20 +91,23 @@ public class OrderConfirmationFrame extends JFrame {
         });
     }
 
+    /**
+     * Charge et affiche les détails du panier, en appliquant les tarifs de gros.
+     * Met également à jour le total global.
+     */
     private void loadCartDetails() {
         model.setRowCount(0);
         List<CartItem> items = cartService.getCartItems();
-        double total = 0;
         for (CartItem ci : items) {
-            double line = ci.getArticle().getPrixUnitaire() * ci.getQuantity();
+            double lineTotal = cartService.computeLinePrice(ci.getArticle(), ci.getQuantity());
             model.addRow(new Object[]{
                     ci.getArticle().getNom(),
                     ci.getArticle().getPrixUnitaire(),
                     ci.getQuantity(),
-                    line
+                    lineTotal
             });
-            total += line;
         }
+        double total = cartService.getCartTotal();
         totalLabel.setText(String.format("Total : %.2f €", total));
     }
 }

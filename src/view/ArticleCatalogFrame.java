@@ -7,14 +7,14 @@ import service.ClientService;
 import service.CommandeService;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.List;
 
 /**
  * Interface catalogue des articles avec ajout au panier, recherche, historique
- * et gestion de session (affichage du nom + déconnexion).
+ * et gestion de session (affichage du nom + déconnexion),
+ * présentée sous forme de « cards » plutôt que de JTable.
  */
 public class ArticleCatalogFrame extends JFrame {
 
@@ -23,13 +23,15 @@ public class ArticleCatalogFrame extends JFrame {
     private final CommandeService  commandeService;
     private final ClientService    clientService;
 
-    private JTable            articleTable;
-    private DefaultTableModel tableModel;
-    private JTextField        searchField;
-    private JButton           searchButton;
+    // Panel qui contiendra les cartes d'articles
+    private JPanel                 catalogPanel;
+    private JScrollPane            catalogScroll;
+
+    private JTextField             searchField;
+    private JButton                searchButton;
 
     // Liste courante d'articles affichée
-    private List<Article> currentArticles;
+    private List<Article>          currentArticles;
 
     public ArticleCatalogFrame(CartService cartService) {
         this.cartService     = cartService;
@@ -45,155 +47,137 @@ public class ArticleCatalogFrame extends JFrame {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(0,5));
 
-        // ==== Bandeau d'accueil + déconnexion ====
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
-
-        // 1) Ligne de bienvenue + bouton logout
+        // ==== Bandeau d'accueil + déconnexion + recherche ====
+        JPanel topPanel = new JPanel(new BorderLayout());
+        // session
         JPanel sessionPanel = new JPanel(new BorderLayout());
-        // Récupère le client courant via son ID
         var client = clientService.findClientById(cartService.getClientId());
         String name = client != null ? client.getNom() : "Invité";
-        JLabel welcomeLabel = new JLabel("Bienvenue, " + name);
-        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-        sessionPanel.add(welcomeLabel, BorderLayout.WEST);
-
+        sessionPanel.add(new JLabel("Bienvenue, " + name), BorderLayout.WEST);
         JButton logoutBtn = new JButton("Se déconnecter");
         logoutBtn.addActionListener((ActionEvent e) -> {
-            // Retour à la connexion
             new LoginFrame().setVisible(true);
             dispose();
         });
         sessionPanel.add(logoutBtn, BorderLayout.EAST);
+        topPanel.add(sessionPanel, BorderLayout.NORTH);
 
-        // 2) Barre de recherche
+        // recherche
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Recherche par nom :"));
         searchField  = new JTextField(20);
         searchPanel.add(searchField);
         searchButton = new JButton("Rechercher");
+        searchButton.addActionListener(e -> searchArticles());
         searchPanel.add(searchButton);
+        topPanel.add(searchPanel, BorderLayout.SOUTH);
 
-        topPanel.add(sessionPanel);
-        topPanel.add(searchPanel);
         add(topPanel, BorderLayout.NORTH);
 
+        // ==== Panneau de cartes ====
+        catalogPanel = new JPanel(new GridLayout(0, 3, 10, 10));
+        catalogPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        catalogScroll = new JScrollPane(
+                catalogPanel,
+                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+        add(catalogScroll, BorderLayout.CENTER);
 
-        // ==== Tableau des articles ====
-        String[] columnNames = {
-                "ID", "Nom", "Description",
-                "Prix Unitaire", "Prix Gros",
-                "Quantité en stock", "Marque"
-        };
-        tableModel   = new DefaultTableModel(columnNames, 0);
-        articleTable = new JTable(tableModel);
-        add(new JScrollPane(articleTable), BorderLayout.CENTER);
-
-        // ==== Boutons en bas ====
+        // ==== Boutons bas ====
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton addToCartBtn = new JButton("Ajouter au panier");
         JButton viewCartBtn  = new JButton("Voir le panier");
-        JButton historyBtn   = new JButton("Historique");
-        bottomPanel.add(addToCartBtn);
-        bottomPanel.add(viewCartBtn);
-        bottomPanel.add(historyBtn);
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        // ==== Hooks ====
-        searchButton.addActionListener(e -> searchArticles());
-        addToCartBtn.addActionListener(e -> addSelectedToCart());
         viewCartBtn.addActionListener(e -> {
             CartFrame cartFrame = new CartFrame(cartService, this);
             cartFrame.setVisible(true);
         });
+        JButton historyBtn   = new JButton("Historique");
         historyBtn.addActionListener(e -> {
             OrderHistoryFrame histo = new OrderHistoryFrame(commandeService, cartService.getClientId());
             histo.setVisible(true);
         });
+        bottomPanel.add(viewCartBtn);
+        bottomPanel.add(historyBtn);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         // Chargement initial
         loadAllArticles();
     }
 
+    /** Charge et affiche toutes les cartes d'articles */
     public void loadAllArticles() {
         currentArticles = articleService.getAllArticles();
-        populateTable(currentArticles);
-    }
-
-    private void populateTable(List<Article> articles) {
-        tableModel.setRowCount(0);
-        for (Article art : articles) {
-            Object[] row = {
-                    art.getId(),
-                    art.getNom(),
-                    art.getDescription(),
-                    art.getPrixUnitaire(),
-                    art.getPrixGros(),
-                    art.getQuantiteEnStock(),
-                    art.getMarque()
-            };
-            tableModel.addRow(row);
+        catalogPanel.removeAll();
+        for (Article art : currentArticles) {
+            catalogPanel.add(createCard(art));
         }
+        catalogPanel.revalidate();
+        catalogPanel.repaint();
     }
 
+    /** Recherche et met à jour le panneau de cartes */
     private void searchArticles() {
-        String keyword = searchField.getText().trim();
-        if (keyword.isEmpty()) {
+        String kw = searchField.getText().trim();
+        if (kw.isEmpty()) {
             loadAllArticles();
         } else {
-            currentArticles = articleService.searchArticlesByName(keyword);
-            populateTable(currentArticles);
+            var filtered = articleService.searchArticlesByName(kw);
+            catalogPanel.removeAll();
+            for (Article art : filtered) {
+                catalogPanel.add(createCard(art));
+            }
+            catalogPanel.revalidate();
+            catalogPanel.repaint();
         }
     }
 
-    private void addSelectedToCart() {
-        int row = articleTable.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Sélectionnez d'abord un article.",
-                    "Aucune sélection",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
+    /** Construis une « card » pour un article donné */
+    private JPanel createCard(Article art) {
+        JPanel card = new JPanel(new BorderLayout(5,5));
+        card.setPreferredSize(new Dimension(180, 220));
+        card.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
-        Article selected = currentArticles.get(row);
-        String qtyStr = JOptionPane.showInputDialog(
-                this,
-                "Quantité pour \"" + selected.getNom() + "\" :",
-                "1"
+        // Titre
+        JLabel title = new JLabel(art.getNom(), SwingConstants.CENTER);
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
+        card.add(title, BorderLayout.NORTH);
+
+        // Description
+        JLabel desc = new JLabel(
+                "<html><body style='text-align:center'>" + art.getDescription() + "</body></html>",
+                SwingConstants.CENTER
         );
-        if (qtyStr == null) return;  // Annulé
+        card.add(desc, BorderLayout.CENTER);
 
-        try {
-            int qty = Integer.parseInt(qtyStr);
-            if (qty <= 0) throw new NumberFormatException();
-
-            boolean added = cartService.addToCart(selected, qty);
-            if (added) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        qty + " exemplaire(s) ajouté(s) au panier."
-                );
-            } else {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Stock insuffisant pour \"" + selected.getNom() + "\".",
-                        "Erreur",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(
+        // Pied : prix + bouton
+        JPanel footer = new JPanel(new GridLayout(3,1,0,4));
+        footer.add(new JLabel("Unitaire : " + art.getPrixUnitaire() + " €", SwingConstants.CENTER));
+        footer.add(new JLabel("Gros : "    + art.getPrixGros()     + " €", SwingConstants.CENTER));
+        JButton btn = new JButton("Ajouter");
+        btn.addActionListener(e -> {
+            String s = JOptionPane.showInputDialog(
                     this,
-                    "Quantité invalide.",
-                    "Erreur",
-                    JOptionPane.ERROR_MESSAGE
+                    "Quantité pour « " + art.getNom() + " » :",
+                    "1"
             );
-        }
+            if (s!=null) {
+                try {
+                    int q = Integer.parseInt(s);
+                    if (cartService.addToCart(art,q))
+                        JOptionPane.showMessageDialog(this, q+" ajouté(s) au panier !");
+                    else
+                        JOptionPane.showMessageDialog(this,
+                                "Stock insuffisant", "Erreur", JOptionPane.ERROR_MESSAGE);
+                } catch(NumberFormatException ex) {
+                    // ignore
+                }
+            }
+        });
+        footer.add(btn);
+
+        card.add(footer, BorderLayout.SOUTH);
+        return card;
     }
 }

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO pour gérer les articles en base : CRUD et mise à jour du stock.
+ * DAO pour gérer les articles en base : CRUD, tarif gros et mise à jour du stock.
  */
 public class ArticleDAO {
 
@@ -14,8 +14,9 @@ public class ArticleDAO {
      * Insère un nouvel article dans la base de données.
      */
     public boolean addArticle(Article article) {
-        String sql = "INSERT INTO article (nom, description, marque, prixUnitaire, prixGros, quantiteEnStock) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO article "
+                + "(nom, description, marque, prixUnitaire, prixGros, quantiteEnStock, quantiteEnGros) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, article.getNom());
@@ -24,6 +25,7 @@ public class ArticleDAO {
             stmt.setDouble(4, article.getPrixUnitaire());
             stmt.setDouble(5, article.getPrixGros());
             stmt.setInt(6, article.getQuantiteEnStock());
+            stmt.setInt(7, article.getQuantiteEnGros());   // ← quantiteEnGros
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -59,6 +61,7 @@ public class ArticleDAO {
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
+
             while (rs.next()) {
                 articles.add(mapResultSetToArticle(rs));
             }
@@ -89,13 +92,14 @@ public class ArticleDAO {
     }
 
     /**
-     * Met à jour un article existant.
+     * Met à jour un article existant (CRUD admin).
      */
     public boolean updateArticle(Article article) {
-        String sql = "UPDATE article SET " +
-                "nom = ?, description = ?, marque = ?, " +
-                "prixUnitaire = ?, prixGros = ?, quantiteEnStock = ? " +
-                "WHERE id = ?";
+        String sql = "UPDATE article SET "
+                + "nom = ?, description = ?, marque = ?, "
+                + "prixUnitaire = ?, prixGros = ?, "
+                + "quantiteEnStock = ?, quantiteEnGros = ? "
+                + "WHERE id = ?";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, article.getNom());
@@ -104,7 +108,8 @@ public class ArticleDAO {
             stmt.setDouble(4, article.getPrixUnitaire());
             stmt.setDouble(5, article.getPrixGros());
             stmt.setInt(6, article.getQuantiteEnStock());
-            stmt.setInt(7, article.getId());
+            stmt.setInt(7, article.getQuantiteEnGros());   // ← quantiteEnGros
+            stmt.setInt(8, article.getId());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -132,9 +137,9 @@ public class ArticleDAO {
      * Ne décrémente que si la quantité en stock est suffisante.
      */
     public boolean updateStock(int articleId, int qtyVendue) {
-        String sql = "UPDATE article " +
-                "SET quantiteEnStock = quantiteEnStock - ? " +
-                "WHERE id = ? AND quantiteEnStock >= ?";
+        String sql = "UPDATE article "
+                + "SET quantiteEnStock = quantiteEnStock - ? "
+                + "WHERE id = ? AND quantiteEnStock >= ?";
         try (Connection conn = DataCO.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, qtyVendue);
@@ -159,6 +164,7 @@ public class ArticleDAO {
         a.setPrixUnitaire(rs.getDouble("prixUnitaire"));
         a.setPrixGros(rs.getDouble("prixGros"));
         a.setQuantiteEnStock(rs.getInt("quantiteEnStock"));
+        a.setQuantiteEnGros(rs.getInt("quantiteEnGros"));  // ← chargement du champ
         return a;
     }
 }

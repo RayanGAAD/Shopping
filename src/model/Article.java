@@ -1,7 +1,7 @@
 package model;
 
 /**
- * Classe représentant un article à vendre.
+ * Classe représentant un article à vendre, avec support tarifaire en gros.
  */
 public class Article {
     private int id;
@@ -10,22 +10,31 @@ public class Article {
     private double prixUnitaire;
     private double prixGros;
     private int quantiteEnStock;
-    private String Marque;  // Si vous avez une table Marque
+    private int quantiteEnGros;    // taille du paquet pour tarif gros
+    private String marque;
 
-    public Article() {
+    public Article() {}
+
+    public Article(int id,
+                   String nom,
+                   String description,
+                   double prixUnitaire,
+                   double prixGros,
+                   int quantiteEnStock,
+                   int quantiteEnGros,
+                   String marque) {
+        this.id               = id;
+        this.nom              = nom;
+        this.description      = description;
+        this.prixUnitaire     = prixUnitaire;
+        this.prixGros         = prixGros;
+        this.quantiteEnStock  = quantiteEnStock;
+        this.quantiteEnGros   = quantiteEnGros;
+        this.marque           = marque;
     }
 
-    public Article(int id, String nom, String description, double prixUnitaire, double prixGros, int quantiteEnStock, int idMarque) {
-        this.id = id;
-        this.nom = nom;
-        this.description = description;
-        this.prixUnitaire = prixUnitaire;
-        this.prixGros = prixGros;
-        this.quantiteEnStock = quantiteEnStock;
-        this.Marque = Marque;
-    }
+    // --- Getters & setters ---
 
-    // Getters et setters
     public int getId() {
         return id;
     }
@@ -68,12 +77,21 @@ public class Article {
         this.quantiteEnStock = quantiteEnStock;
     }
 
-    public String getMarque() {
-        return Marque;
+    /**
+     * Taille du lot (seuil) pour déclencher le tarif de gros.
+     */
+    public int getQuantiteEnGros() {
+        return quantiteEnGros;
+    }
+    public void setQuantiteEnGros(int quantiteEnGros) {
+        this.quantiteEnGros = quantiteEnGros;
     }
 
-    public void setMarque(String Marque) {
-        this.Marque = Marque;
+    public String getMarque() {
+        return marque;
+    }
+    public void setMarque(String marque) {
+        this.marque = marque;
     }
 
     @Override
@@ -85,7 +103,8 @@ public class Article {
                 ", prixUnitaire=" + prixUnitaire +
                 ", prixGros=" + prixGros +
                 ", quantiteEnStock=" + quantiteEnStock +
-                ", Marque=" + Marque +
+                ", quantiteEnGros=" + quantiteEnGros +
+                ", marque='" + marque + '\'' +
                 '}';
     }
 }

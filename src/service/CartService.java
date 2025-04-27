@@ -4,12 +4,13 @@ import model.Panier;
 import model.Article;
 import model.CartItem;
 import DAO.ArticleDAO;
-import service.CommandeService;
 import java.util.List;
 
 /**
  * Service de gestion du panier d'achat, avec intégration de la persistance de commandes
  * et vérification de la disponibilité en stock.
+ *
+ * Maintenant avec support des tarifs "prixGros" pour les quantités en gros.
  */
 public class CartService {
     private Panier panier = new Panier();
@@ -78,11 +79,37 @@ public class CartService {
     }
 
     /**
-     * Calcule le montant total du panier.
+     * Calcule le montant total du panier en appliquant les tarifs de gros.
      * @return Total en euros.
      */
     public double getCartTotal() {
-        return panier.getTotal();
+        double total = 0;
+        for (CartItem ci : panier.getItems()) {
+            total += computeLinePrice(ci.getArticle(), ci.getQuantity());
+        }
+        return total;
+    }
+
+    /**
+     * Calcule le prix d'une ligne en tenant compte du prix en gros.
+     * Découpe qty en paquets de art.getQuantiteEnGros() à prix art.getPrixGros(),
+     * puis facture le reste au prix unitaire.
+     *
+     * @param art Article concerné (avec prixUnitaire, prixGros et quantiteEnGros).
+     * @param qty Quantité commandée.
+     * @return Prix total pour cette ligne.
+     */
+    public double computeLinePrice(Article art, int qty)
+    {
+        int packSize = art.getQuantiteEnGros();
+        if (packSize > 0 && art.getPrixGros() > 0) {
+            int packs = qty / packSize;
+            int rest  = qty % packSize;
+            return packs * art.getPrixGros() + rest * art.getPrixUnitaire();
+        } else {
+            // Pas de tarif gros défini : tarif linéaire
+            return qty * art.getPrixUnitaire();
+        }
     }
 
     /**
