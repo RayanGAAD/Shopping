@@ -3,6 +3,7 @@ package view;
 import model.Article;
 import service.ArticleService;
 import service.CartService;
+import service.ClientService;
 import service.CommandeService;
 
 import javax.swing.*;
@@ -11,18 +12,16 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.List;
 
-// Import des autres vues
-import view.CartFrame;
-import view.OrderHistoryFrame;
-
 /**
- * Interface catalogue des articles avec ajout au panier, recherche et historique.
+ * Interface catalogue des articles avec ajout au panier, recherche, historique
+ * et gestion de session (affichage du nom + déconnexion).
  */
 public class ArticleCatalogFrame extends JFrame {
 
     private final ArticleService   articleService;
     private final CartService      cartService;
     private final CommandeService  commandeService;
+    private final ClientService    clientService;
 
     private JTable            articleTable;
     private DefaultTableModel tableModel;
@@ -32,13 +31,11 @@ public class ArticleCatalogFrame extends JFrame {
     // Liste courante d'articles affichée
     private List<Article> currentArticles;
 
-    /**
-     * @param cartService Le CartService déjà initialisé (avec clientId).
-     */
     public ArticleCatalogFrame(CartService cartService) {
-        this.cartService      = cartService;
-        this.articleService   = new ArticleService();
-        this.commandeService  = new CommandeService();
+        this.cartService     = cartService;
+        this.articleService  = new ArticleService();
+        this.commandeService = new CommandeService();
+        this.clientService   = new ClientService();
 
         setTitle("Catalogue d'Articles");
         setSize(900, 600);
@@ -50,16 +47,41 @@ public class ArticleCatalogFrame extends JFrame {
     private void initUI() {
         setLayout(new BorderLayout());
 
-        // Barre de recherche
+        // ==== Bandeau d'accueil + déconnexion ====
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+
+        // 1) Ligne de bienvenue + bouton logout
+        JPanel sessionPanel = new JPanel(new BorderLayout());
+        // Récupère le client courant via son ID
+        var client = clientService.findClientById(cartService.getClientId());
+        String name = client != null ? client.getNom() : "Invité";
+        JLabel welcomeLabel = new JLabel("Bienvenue, " + name);
+        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        sessionPanel.add(welcomeLabel, BorderLayout.WEST);
+
+        JButton logoutBtn = new JButton("Se déconnecter");
+        logoutBtn.addActionListener((ActionEvent e) -> {
+            // Retour à la connexion
+            new LoginFrame().setVisible(true);
+            dispose();
+        });
+        sessionPanel.add(logoutBtn, BorderLayout.EAST);
+
+        // 2) Barre de recherche
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.add(new JLabel("Recherche par nom :"));
         searchField  = new JTextField(20);
         searchPanel.add(searchField);
         searchButton = new JButton("Rechercher");
         searchPanel.add(searchButton);
-        add(searchPanel, BorderLayout.NORTH);
 
-        // Tableau des articles
+        topPanel.add(sessionPanel);
+        topPanel.add(searchPanel);
+        add(topPanel, BorderLayout.NORTH);
+
+
+        // ==== Tableau des articles ====
         String[] columnNames = {
                 "ID", "Nom", "Description",
                 "Prix Unitaire", "Prix Gros",
@@ -69,7 +91,7 @@ public class ArticleCatalogFrame extends JFrame {
         articleTable = new JTable(tableModel);
         add(new JScrollPane(articleTable), BorderLayout.CENTER);
 
-        // Boutons bas
+        // ==== Boutons en bas ====
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton addToCartBtn = new JButton("Ajouter au panier");
         JButton viewCartBtn  = new JButton("Voir le panier");
@@ -79,16 +101,15 @@ public class ArticleCatalogFrame extends JFrame {
         bottomPanel.add(historyBtn);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // Actions
-        searchButton.addActionListener((ActionEvent e) -> searchArticles());
-        addToCartBtn .addActionListener((ActionEvent e) -> addSelectedToCart());
-        viewCartBtn  .addActionListener((ActionEvent e) -> {
+        // ==== Hooks ====
+        searchButton.addActionListener(e -> searchArticles());
+        addToCartBtn.addActionListener(e -> addSelectedToCart());
+        viewCartBtn.addActionListener(e -> {
             CartFrame cartFrame = new CartFrame(cartService, this);
             cartFrame.setVisible(true);
         });
-        historyBtn   .addActionListener((ActionEvent e) -> {
-            int clientId = cartService.getClientId();
-            OrderHistoryFrame histo = new OrderHistoryFrame(commandeService, clientId);
+        historyBtn.addActionListener(e -> {
+            OrderHistoryFrame histo = new OrderHistoryFrame(commandeService, cartService.getClientId());
             histo.setVisible(true);
         });
 
