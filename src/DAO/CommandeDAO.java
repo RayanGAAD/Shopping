@@ -4,12 +4,12 @@ import model.Commande;
 import model.LigneCommande;
 
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 /**
- * DAO pour persister les commandes et leurs lignes en base de données.
+ * DAO pour persister les commandes et leurs lignes en base de données,
+ * et produire des statistiques pour le reporting.
  */
 public class CommandeDAO {
 
@@ -126,7 +126,7 @@ public class CommandeDAO {
 
     /**
      * Récupère toutes les lignes associées à une commande donnée,
-     * en allant chercher le prix unitaire depuis la table `article`.
+     * en allant chercher le prix unitaire (champ `prixUnitaire`) depuis la table `article`.
      * @param commandeId L'identifiant de la commande.
      * @return Liste d'objets LigneCommande, avec prixUnitaire correctement rempli.
      */
@@ -156,6 +156,61 @@ public class CommandeDAO {
             e.printStackTrace();
         }
         return lignes;
+    }
+
+    /**
+     * Ventes cumulées par marque (somme des quantités vendues).
+     * @return Map<marque, quantité_totale_vendue>
+     */
+    public Map<String, Integer> getSalesByBrand() {
+        Map<String, Integer> ventesParMarque = new LinkedHashMap<>();
+        String sql =
+                "SELECT a.marque, SUM(ca.quantite) AS total " +
+                        "FROM commande_article ca " +
+                        "JOIN article a ON ca.article_id = a.id " +
+                        "GROUP BY a.marque " +
+                        "ORDER BY a.marque";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                ventesParMarque.put(
+                        rs.getString("marque"),
+                        rs.getInt("total")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ventesParMarque;
+    }
+
+    /**
+     * Nombre de commandes passées par jour.
+     * @return Map<date_commande (YYYY-MM-DD), nombre_de_commandes>
+     */
+    public Map<LocalDate, Integer> getOrdersPerDay() {
+        Map<LocalDate, Integer> commandesParJour = new TreeMap<>();
+        String sql =
+                "SELECT DATE(date_commande) AS jour, COUNT(*) AS count " +
+                        "FROM commande " +
+                        "GROUP BY jour " +
+                        "ORDER BY jour";
+        try (Connection conn = DataCO.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                commandesParJour.put(
+                        rs.getDate("jour").toLocalDate(),
+                        rs.getInt("count")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return commandesParJour;
     }
 
     /**

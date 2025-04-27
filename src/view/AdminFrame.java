@@ -8,6 +8,10 @@ import service.CommandeService;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Fenêtre principale de l'administration, accessible uniquement aux clients de type "admin".
+ * Contient quatre onglets : gestion des articles, gestion des clients, consultation des commandes et reporting.
+ */
 public class AdminFrame extends JFrame {
     private final Client admin;
     private final ArticleService  articleService   = new ArticleService();
@@ -24,7 +28,7 @@ public class AdminFrame extends JFrame {
         // Barre de menu avec déconnexion
         setJMenuBar(createMenuBar());
 
-        // Onglets
+        setLayout(new BorderLayout());
         initTabs();
     }
 
@@ -33,7 +37,6 @@ public class AdminFrame extends JFrame {
         JMenu menuCompte = new JMenu("Compte");
         JMenuItem miDeconnexion = new JMenuItem("Se déconnecter");
         miDeconnexion.addActionListener(e -> {
-            // Retour à la connexion
             new LoginFrame().setVisible(true);
             dispose();
         });
@@ -60,11 +63,15 @@ public class AdminFrame extends JFrame {
                 new OrderManagementPanel(commandeService, clientService)
         );
 
+        // **Onglet 4 : Reporting / Statistiques**
+        tabs.addTab("Reporting",
+                new ReportingPanel(commandeService)
+        );
+
         add(tabs, BorderLayout.CENTER);
     }
 
     public static void main(String[] args) {
-        // Pour tester sans passer par la connexion
         Client fakeAdmin = new Client();
         fakeAdmin.setNom("Admin Test");
         fakeAdmin.setType("admin");

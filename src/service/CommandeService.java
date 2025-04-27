@@ -6,12 +6,15 @@ import model.CartItem;
 import model.Commande;
 import model.LigneCommande;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service gérant le passage de commande : persistance en base,
- * mise à jour des stocks, historique et extraction de toutes les commandes.
+ * mise à jour des stocks, historique et extraction de toutes les commandes,
+ * ainsi que reporting des statistiques.
  */
 public class CommandeService {
     private final CommandeDAO commandeDAO = new CommandeDAO();
@@ -62,9 +65,25 @@ public class CommandeService {
     }
 
     /**
-     * **NOUVEAU** : pour l’administration, récupère **toutes** les commandes de tous les clients.
+     * Pour l’administration, récupère toutes les commandes de tous les clients.
      */
     public List<Commande> getAllOrders() {
         return commandeDAO.getAllCommandes();
+    }
+
+    /**
+     * Reporting : nombre total d’articles vendus par marque.
+     * @return Map<marque, quantité_totale_vendue>
+     */
+    public Map<String, Integer> getSalesByBrand() {
+        return commandeDAO.getSalesByBrand();
+    }
+
+    /**
+     * Reporting : nombre de commandes passées par jour.
+     * @return Map<date (YYYY-MM-DD), nombre_de_commandes>
+     */
+    public Map<LocalDate, Integer> getOrdersPerDay() {
+        return commandeDAO.getOrdersPerDay();
     }
 }
