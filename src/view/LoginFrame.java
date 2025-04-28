@@ -16,18 +16,30 @@ public class LoginFrame extends JFrame {
     private JButton registerLink;
 
     private final ClientService clientService = new ClientService();
-    private final CartService   cartService   = new CartService();
+    private final CartService cartService = new CartService();
 
     public LoginFrame() {
         setTitle("Connexion Client");
-        setSize(350, 200);
+        setSize(400, 250);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         initUI();
     }
 
     private void initUI() {
-        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                // Dégradé doux
+                Graphics2D g2d = (Graphics2D) g;
+                Color color1 = new Color(224, 255, 255); // bleu très clair
+                Color color2 = new Color(255, 239, 213); // pêche clair
+                GradientPaint gp = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         panel.add(new JLabel("Email :"));
@@ -38,20 +50,28 @@ public class LoginFrame extends JFrame {
         passwordField = new JPasswordField();
         panel.add(passwordField);
 
-        panel.add(new JLabel()); // vide
+        panel.add(new JLabel()); // Vide pour l'alignement
+
         loginButton = new JButton("Se connecter");
+        loginButton.setBackground(new Color(173, 216, 230)); // Bleu clair
+        loginButton.setForeground(Color.BLACK);             // Texte noir
+        loginButton.setFocusPainted(false);
         panel.add(loginButton);
 
-        panel.add(new JLabel()); // vide
+        panel.add(new JLabel()); // Vide pour l'alignement
+
         registerLink = new JButton("S'inscrire");
+        registerLink.setBackground(new Color(144, 238, 144)); // Vert clair
+        registerLink.setForeground(Color.BLACK);              // Texte noir
+        registerLink.setFocusPainted(false);
         panel.add(registerLink);
 
         add(panel);
 
-        // Action du bouton Se connecter
+        // Action bouton Se connecter
         loginButton.addActionListener(e -> authenticate());
 
-        // Lien vers l'inscription
+        // Action bouton S'inscrire
         registerLink.addActionListener(e -> {
             new ClientRegistrationFrame().setVisible(true);
             dispose();
@@ -60,26 +80,24 @@ public class LoginFrame extends JFrame {
 
     private void authenticate() {
         String email = emailField.getText().trim();
-        String pwd   = String.valueOf(passwordField.getPassword());
+        String pwd = String.valueOf(passwordField.getPassword());
 
         Integer clientId = clientService.login(email, pwd);
         if (clientId != null) {
             Client current = clientService.getCurrentClient();
 
             if ("admin".equalsIgnoreCase(current.getType())) {
-                // Si admin, affiche l'interface d'administration
                 SwingUtilities.invokeLater(() -> {
                     new AdminFrame(current).setVisible(true);
                 });
             } else {
-                // Sinon, prépare le panier et affiche le catalogue client
                 cartService.setClientId(clientId);
                 SwingUtilities.invokeLater(() -> {
                     new ArticleCatalogFrame(cartService).setVisible(true);
                 });
             }
 
-            dispose();  // ferme la fenêtre de login
+            dispose();
         } else {
             JOptionPane.showMessageDialog(
                     this,

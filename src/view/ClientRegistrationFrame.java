@@ -6,13 +6,11 @@ import service.ClientService;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class ClientRegistrationFrame extends JFrame {
 
-    private ClientService clientService = new ClientService();
-    private CartService   cartService   = new CartService();
+    private final ClientService clientService = new ClientService();
+    private final CartService cartService = new CartService();
 
     private JTextField nameField;
     private JTextField emailField;
@@ -22,15 +20,26 @@ public class ClientRegistrationFrame extends JFrame {
 
     public ClientRegistrationFrame() {
         setTitle("Inscription Client");
-        setSize(400, 300);
+        setSize(400, 350);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         initUI();
     }
 
     private void initUI() {
-        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                Color color1 = new Color(224, 255, 255); // bleu clair
+                Color color2 = new Color(255, 239, 213); // pêche clair
+                GradientPaint gp = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         panel.add(new JLabel("Nom :"));
         nameField = new JTextField();
@@ -48,25 +57,24 @@ public class ClientRegistrationFrame extends JFrame {
         typeComboBox = new JComboBox<>(new String[]{"ancien", "nouveau", "client", "admin"});
         panel.add(typeComboBox);
 
-        panel.add(new JLabel());
+        panel.add(new JLabel()); // vide pour alignement
+
         registerButton = new JButton("S'inscrire");
+        registerButton.setBackground(new Color(144, 238, 144)); // Vert clair
+        registerButton.setForeground(Color.BLACK);             // Texte noir
+        registerButton.setFocusPainted(false);
         panel.add(registerButton);
 
         add(panel);
 
-        registerButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                registerClient();
-            }
-        });
+        registerButton.addActionListener(e -> registerClient());
     }
 
     private void registerClient() {
-        String nom        = nameField.getText().trim();
-        String email      = emailField.getText().trim();
+        String nom = nameField.getText().trim();
+        String email = emailField.getText().trim();
         String motDePasse = new String(passwordField.getPassword());
-        String type       = (String) typeComboBox.getSelectedItem();
+        String type = (String) typeComboBox.getSelectedItem();
 
         Client client = new Client();
         client.setNom(nom);
@@ -74,7 +82,6 @@ public class ClientRegistrationFrame extends JFrame {
         client.setMot_De_Passe(motDePasse);
         client.setType(type);
 
-        // 1) On enregistre
         boolean success = clientService.registerClient(client);
         if (!success) {
             JOptionPane.showMessageDialog(
@@ -85,7 +92,6 @@ public class ClientRegistrationFrame extends JFrame {
             return;
         }
 
-        // 2) On récupère l'objet Client fraîchement créé
         Client saved = clientService.getClientByEmail(email);
         if (saved == null) {
             JOptionPane.showMessageDialog(
@@ -96,20 +102,17 @@ public class ClientRegistrationFrame extends JFrame {
             return;
         }
 
-        // 3) Redirection selon le type
         if ("admin".equalsIgnoreCase(saved.getType())) {
-            // Pour un admin, on ouvre l'interface d'administration
             AdminFrame adminFrame = new AdminFrame(saved);
             adminFrame.setVisible(true);
         } else {
-            // Pour un client classique, on initialise le panier et on ouvre le catalogue
             cartService.setClientId(saved.getId());
             JOptionPane.showMessageDialog(this, "Client inscrit avec succès !");
             ArticleCatalogFrame catalogFrame = new ArticleCatalogFrame(cartService);
             catalogFrame.setVisible(true);
         }
 
-        dispose();  // ferme la fenêtre d'inscription
+        dispose();
     }
 
     public static void main(String[] args) {

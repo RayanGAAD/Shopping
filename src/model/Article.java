@@ -10,8 +10,9 @@ public class Article {
     private double prixUnitaire;
     private double prixGros;
     private int quantiteEnStock;
-    private int quantiteEnGros;    // taille du paquet pour tarif gros
+    private int quantiteEnGros;
     private String marque;
+    private String imagePath; // AJOUT
 
     public Article() {}
 
@@ -22,15 +23,17 @@ public class Article {
                    double prixGros,
                    int quantiteEnStock,
                    int quantiteEnGros,
-                   String marque) {
-        this.id               = id;
-        this.nom              = nom;
-        this.description      = description;
-        this.prixUnitaire     = prixUnitaire;
-        this.prixGros         = prixGros;
-        this.quantiteEnStock  = quantiteEnStock;
-        this.quantiteEnGros   = quantiteEnGros;
-        this.marque           = marque;
+                   String marque,
+                   String imagePath) { // AJOUT
+        this.id = id;
+        this.nom = nom;
+        this.description = description;
+        this.prixUnitaire = prixUnitaire;
+        this.prixGros = prixGros;
+        this.quantiteEnStock = quantiteEnStock;
+        this.quantiteEnGros = quantiteEnGros;
+        this.marque = marque;
+        this.imagePath = imagePath; // AJOUT
     }
 
     // --- Getters & setters ---
@@ -77,9 +80,6 @@ public class Article {
         this.quantiteEnStock = quantiteEnStock;
     }
 
-    /**
-     * Taille du lot (seuil) pour déclencher le tarif de gros.
-     */
     public int getQuantiteEnGros() {
         return quantiteEnGros;
     }
@@ -94,6 +94,13 @@ public class Article {
         this.marque = marque;
     }
 
+    public String getImagePath() {     // AJOUT
+        return imagePath;
+    }
+    public void setImagePath(String imagePath) {    // AJOUT
+        this.imagePath = imagePath;
+    }
+
     @Override
     public String toString() {
         return "Article{" +
@@ -105,6 +112,7 @@ public class Article {
                 ", quantiteEnStock=" + quantiteEnStock +
                 ", quantiteEnGros=" + quantiteEnGros +
                 ", marque='" + marque + '\'' +
+                ", imagePath='" + imagePath + '\'' + // AJOUT
                 '}';
     }
 }

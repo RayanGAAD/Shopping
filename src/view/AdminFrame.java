@@ -14,9 +14,9 @@ import java.awt.*;
  */
 public class AdminFrame extends JFrame {
     private final Client admin;
-    private final ArticleService  articleService   = new ArticleService();
-    private final ClientService   clientService    = new ClientService();
-    private final CommandeService commandeService  = new CommandeService();
+    private final ArticleService articleService = new ArticleService();
+    private final ClientService clientService = new ClientService();
+    private final CommandeService commandeService = new CommandeService();
 
     public AdminFrame(Client admin) {
         this.admin = admin;
@@ -28,18 +28,44 @@ public class AdminFrame extends JFrame {
         // Barre de menu avec déconnexion
         setJMenuBar(createMenuBar());
 
+        // Dégradé de fond léger
+        setContentPane(createGradientPanel());
+
         setLayout(new BorderLayout());
         initTabs();
+    }
+
+    private JPanel createGradientPanel() {
+        return new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                Color color1 = new Color(224, 255, 255); // Bleu clair
+                Color color2 = new Color(255, 239, 213); // Pêche clair
+                GradientPaint gp = new GradientPaint(0, 0, color1, 0, getHeight(), color2);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
     }
 
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
         JMenu menuCompte = new JMenu("Compte");
+        menuCompte.setFont(new Font("Arial", Font.BOLD, 14));
+
         JMenuItem miDeconnexion = new JMenuItem("Se déconnecter");
+        miDeconnexion.setBackground(new Color(255, 150, 150)); // Rouge clair
+        miDeconnexion.setForeground(Color.BLACK);
+        miDeconnexion.setFocusPainted(false);
+        miDeconnexion.setFont(new Font("Arial", Font.BOLD, 13));
+
         miDeconnexion.addActionListener(e -> {
             new LoginFrame().setVisible(true);
             dispose();
         });
+
         menuCompte.add(miDeconnexion);
         menuBar.add(menuCompte);
         return menuBar;
@@ -47,23 +73,17 @@ public class AdminFrame extends JFrame {
 
     private void initTabs() {
         JTabbedPane tabs = new JTabbedPane();
+        tabs.setFont(new Font("Arial", Font.PLAIN, 14));
 
-        // Onglet 1 : CRUD Articles
         tabs.addTab("Articles",
                 new ArticleManagementPanel(articleService)
         );
-
-        // Onglet 2 : CRUD Clients
         tabs.addTab("Clients",
                 new ClientManagementPanel(clientService)
         );
-
-        // Onglet 3 : Consultation des commandes
         tabs.addTab("Commandes",
                 new OrderManagementPanel(commandeService, clientService)
         );
-
-        // **Onglet 4 : Reporting / Statistiques**
         tabs.addTab("Reporting",
                 new ReportingPanel(commandeService)
         );

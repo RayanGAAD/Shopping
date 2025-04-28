@@ -1,7 +1,7 @@
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import view.LoginFrame;
+import view.WelcomeFrame;
 
 /**
  * Point d'entrée principal de l'application.
@@ -19,11 +19,9 @@ public class Main {
             // Si échec, on continue quand même avec le L&F par défaut
             ex.printStackTrace();
         }
-
-        // 2) Lancer le LoginFrame
-        SwingUtilities.invokeLater(() -> {
-            LoginFrame loginFrame = new LoginFrame();
-            loginFrame.setVisible(true);
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new WelcomeFrame().setVisible(true);}
         });
     }
 }
