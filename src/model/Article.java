@@ -1,7 +1,8 @@
 package model;
 
 /**
- * Classe représentant un article à vendre, avec support tarifaire en gros.
+ * Classe représentant un article à vendre, avec support tarifaire en gros
+ * et chemin vers une image (pour l’affichage dans le catalogue).
  */
 public class Article {
     private int id;
@@ -10,9 +11,9 @@ public class Article {
     private double prixUnitaire;
     private double prixGros;
     private int quantiteEnStock;
-    private int quantiteEnGros;
+    private int quantiteEnGros;      // paquet pour tarif gros
     private String marque;
-    private String imagePath; // AJOUT
+    private String imagePath;        // chemin relatif (ex: "images/Briquet.png")
 
     public Article() {}
 
@@ -24,16 +25,16 @@ public class Article {
                    int quantiteEnStock,
                    int quantiteEnGros,
                    String marque,
-                   String imagePath) { // AJOUT
-        this.id = id;
-        this.nom = nom;
-        this.description = description;
-        this.prixUnitaire = prixUnitaire;
-        this.prixGros = prixGros;
-        this.quantiteEnStock = quantiteEnStock;
-        this.quantiteEnGros = quantiteEnGros;
-        this.marque = marque;
-        this.imagePath = imagePath; // AJOUT
+                   String imagePath) {
+        this.id               = id;
+        this.nom              = nom;
+        this.description      = description;
+        this.prixUnitaire     = prixUnitaire;
+        this.prixGros         = prixGros;
+        this.quantiteEnStock  = quantiteEnStock;
+        this.quantiteEnGros   = quantiteEnGros;
+        this.marque           = marque;
+        this.imagePath        = imagePath;
     }
 
     // --- Getters & setters ---
@@ -94,10 +95,10 @@ public class Article {
         this.marque = marque;
     }
 
-    public String getImagePath() {     // AJOUT
+    public String getImagePath() {
         return imagePath;
     }
-    public void setImagePath(String imagePath) {    // AJOUT
+    public void setImagePath(String imagePath) {
         this.imagePath = imagePath;
     }
 
@@ -112,7 +113,7 @@ public class Article {
                 ", quantiteEnStock=" + quantiteEnStock +
                 ", quantiteEnGros=" + quantiteEnGros +
                 ", marque='" + marque + '\'' +
-                ", imagePath='" + imagePath + '\'' + // AJOUT
+                ", imagePath='" + imagePath + '\'' +
                 '}';
     }
 }
